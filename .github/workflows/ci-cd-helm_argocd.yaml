@@ -1,0 +1,52 @@
+name: Agentic-K8S-RECONCILE CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  lint-and-template:
+    name: Helm Lint & Dry-Run Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.0
+
+      - name: Helm Lint
+        run: |
+          echo "===> Linting Helm Chart..."
+          helm lint charts/ai-sre-platform
+
+      - name: Helm Template Dry-Run Test
+        run: |
+          echo "===> Testing Helm Chart Template Rendering..."
+          helm template test-release charts/ai-sre-platform --debug > /dev/null
+
+  argocd-trigger-sync:
+    name: ArgoCD Sync Trigger
+    needs: lint-and-template
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Trigger ArgoCD Sync
+        run: |
+          echo "===> Triggering ArgoCD Production Application Sync..."
+          curl -X POST https://${{ secrets.ARGOCD_SERVER }}/api/v1/applications/ai-sre-platform-prod/sync \
+            -H "Authorization: Bearer ${{ secrets.ARGOCD_AUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -k
+

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: ai-sre-platform
+description: Production Helm 3 Chart for Autonomous AI-SRE Agents & Model Context Protocol (MCP) Infrastructure
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ai-sre
+  - langgraph
+  - mcp
+  - gitops
+  - argocd
+maintainers:
+  - name: Principal AI Infrastructure Architect
+    email: platform-arch@enterprise.ai

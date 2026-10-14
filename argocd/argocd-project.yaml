@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ai-sre-project
+  namespace: argocd
+spec:
+  description: Autonomous AI-SRE Infrastructure AppProject
+  sourceRepos:
+    - 'https://github.com/enterprise/ai-sre-platform.git'
+  destinations:
+    - namespace: 'ai-sre-*'
+      server: 'https://kubernetes.default.svc'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'

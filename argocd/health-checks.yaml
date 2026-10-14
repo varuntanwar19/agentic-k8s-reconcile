@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  resource.customizations.health.ai-sre.enterprise.ai_AutonomousAgentPolicy: |
+    hs = {}
+    if obj.status ~= nil then
+      if obj.status.healthStatus == "Healthy" then
+        hs.status = "Healthy"
+        hs.message = "All autonomous agents operating normally"
+        return hs
+      elseif obj.status.healthStatus == "Degraded" then
+        hs.status = "Degraded"
+        hs.message = "Agent execution failure or unhandled incident state"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for agent initialization"
+    return hs

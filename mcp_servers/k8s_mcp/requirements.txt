@@ -1,0 +1,5 @@
+mcp>=0.1.0
+kubernetes>=29.0.0
+pyyaml>=6.0.1
+pydantic>=2.6.0
+cryptography>=42.0.0

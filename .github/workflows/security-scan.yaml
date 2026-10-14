@@ -1,0 +1,107 @@
+name: Security Scan & Docker Build/Push
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  kube-linter:
+    name: Kube-Linter Manifest Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+
+      - name: Render Helm Templates
+        run: |
+          mkdir -p rendered-manifests
+          helm template ai-sre charts/ai-sre-platform > rendered-manifests/all-rendered.yaml
+
+      - name: Scan with Kube-Linter
+        uses: stackrox/kube-linter-action@v1
+        with:
+          directory: rendered-manifests
+
+  trivy-config-scan:
+    name: Trivy IaC Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Vulnerability & Security Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          hide-shortcut-bearer-token: true
+          ignore-unfixed: true
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+
+  publish-images:
+    name: Build & Push Docker Images
+    needs: [kube-linter, trivy-config-scan]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # LangGraph Agents
+          - name: event-trapper
+            path: ./agents/event_trapper
+            image: ${{ secrets.DOCKERHUB_USERNAME }}/event-trapper
+          - name: rca-agent
+            path: ./agents/rca_agent
+            image: ${{ secrets.DOCKERHUB_USERNAME }}/rca-agent
+          - name: remediation-agent
+            path: ./agents/remediation_agent
+            image: ${{ secrets.DOCKERHUB_USERNAME }}/remediation-agent
+          # MCP Servers
+          - name: prometheus-mcp
+            path: ./mcp_servers/prometheus_mcp
+            image: ${{ secrets.DOCKERHUB_USERNAME }}/prometheus-mcp
+          - name: k8s-mcp
+            path: ./mcp_servers/k8s_mcp
+            image: ${{ secrets.DOCKERHUB_USERNAME }}/k8s-mcp
+          - name: github-mcp
+            path: ./mcp_servers/github_mcp
+            image: ${{ secrets.DOCKERHUB_USERNAME }}/github-mcp
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.path }}
+          file: ${{ matrix.path }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

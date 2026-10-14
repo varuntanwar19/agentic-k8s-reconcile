@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ai-sre-platform-dev
+  namespace: argocd
+  labels:
+    environment: development
+spec:
+  project: ai-sre-project
+  source:
+    repoURL: 'https://github.com/enterprise/ai-sre-platform.git'
+    targetRevision: dev
+    path: charts/ai-sre-platform
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: ai-sre-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

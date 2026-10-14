@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ai-sre-platform.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "ai-sre-platform.labels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.global.environment | quote }}
+  CLUSTER_NAME: {{ .Values.global.clusterName | quote }}
+  PROMETHEUS_MCP_URL: "http://{{ include "ai-sre-platform.fullname" . }}-mcp-prometheus:8080"
+  K8S_MCP_URL: "http://{{ include "ai-sre-platform.fullname" . }}-mcp-k8s:8081"
+  GITHUB_MCP_URL: "http://{{ include "ai-sre-platform.fullname" . }}-mcp-github:8082"
+  SYSTEM_PROMPT_RCA: |
+    You are an expert Principal AI-SRE system. Analyze incoming telemetry metrics,
+    correlate Kubernetes pod logs, inspect recent GitHub commits, and generate a 
+    definitive root cause summary.

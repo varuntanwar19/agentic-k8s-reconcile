@@ -1,0 +1,143 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-sre-platform.fullname" . }}-event-trapper
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "ai-sre-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: event-trapper-agent
+spec:
+  replicas: {{ .Values.agents.eventTrapper.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ai-sre-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: event-trapper-agent
+  template:
+    metadata:
+      labels:
+        {{- include "ai-sre-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: event-trapper-agent
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: event-trapper
+          image: "{{ .Values.agents.eventTrapper.image.repository }}:{{ .Values.agents.eventTrapper.image.tag }}"
+          imagePullPolicy: {{ .Values.agents.eventTrapper.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.agents.eventTrapper.port }}
+              name: http
+          envFrom:
+            - configMapRef:
+                name: {{ include "ai-sre-platform.fullname" . }}-config
+            - secretRef:
+                name: {{ include "ai-sre-platform.fullname" . }}-secrets
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.agents.eventTrapper.resources | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-sre-platform.fullname" . }}-rca-agent
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "ai-sre-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rca-agent
+spec:
+  replicas: {{ .Values.agents.rcaAgent.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ai-sre-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: rca-agent
+  template:
+    metadata:
+      labels:
+        {{- include "ai-sre-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: rca-agent
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: rca-agent
+          image: "{{ .Values.agents.rcaAgent.image.repository }}:{{ .Values.agents.rcaAgent.image.tag }}"
+          imagePullPolicy: {{ .Values.agents.rcaAgent.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.agents.rcaAgent.port }}
+              name: http
+          envFrom:
+            - configMapRef:
+                name: {{ include "ai-sre-platform.fullname" . }}-config
+            - secretRef:
+                name: {{ include "ai-sre-platform.fullname" . }}-secrets
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.agents.rcaAgent.resources | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-sre-platform.fullname" . }}-remediation-agent
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "ai-sre-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: remediation-agent
+spec:
+  replicas: {{ .Values.agents.remediationAgent.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ai-sre-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: remediation-agent
+  template:
+    metadata:
+      labels:
+        {{- include "ai-sre-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: remediation-agent
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: remediation-agent
+          image: "{{ .Values.agents.remediationAgent.image.repository }}:{{ .Values.agents.remediationAgent.image.tag }}"
+          imagePullPolicy: {{ .Values.agents.remediationAgent.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.agents.remediationAgent.port }}
+              name: http
+          envFrom:
+            - configMapRef:
+                name: {{ include "ai-sre-platform.fullname" . }}-config
+            - secretRef:
+                name: {{ include "ai-sre-platform.fullname" . }}-secrets
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.agents.remediationAgent.resources | nindent 12 }}

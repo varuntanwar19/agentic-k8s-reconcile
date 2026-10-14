@@ -1,0 +1,117 @@
+global:
+  environment: production
+  namespace: ai-sre-system
+  clusterName: prod-us-east-1
+
+agents:
+  eventTrapper:
+    replicaCount: 2
+    image:
+      repository: enterprise.registry.ai/sre/event-trapper
+      tag: "v1.0.0"
+      pullPolicy: IfNotPresent
+    port: 8000
+    resources:
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+    env:
+      LOG_LEVEL: "INFO"
+      MAX_ALERT_QUEUE_SIZE: "10000"
+
+  rcaAgent:
+    replicaCount: 2
+    image:
+      repository: enterprise.registry.ai/sre/rca-agent
+      tag: "v1.0.0"
+      pullPolicy: IfNotPresent
+    port: 8001
+    resources:
+      limits:
+        cpu: "2000m"
+        memory: "2Gi"
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+    env:
+      MAX_REASONING_STEPS: "10"
+      OPENAI_MODEL: "gpt-4o"
+
+  remediationAgent:
+    replicaCount: 1
+    image:
+      repository: enterprise.registry.ai/sre/remediation-agent
+      tag: "v1.0.0"
+      pullPolicy: IfNotPresent
+    port: 8002
+    resources:
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+    env:
+      AUTO_REMEDIATE_CRITICAL: "false"
+      GITOPS_TARGET_BRANCH: "main"
+
+mcpServers:
+  prometheus:
+    replicaCount: 1
+    port: 8080
+    image:
+      repository: enterprise.registry.ai/sre/prometheus-mcp
+      tag: "v1.0.0"
+      pullPolicy: IfNotPresent
+    endpoint: "http://prometheus-k8s.monitoring.svc:9090"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+  kubernetes:
+    replicaCount: 1
+    port: 8081
+    image:
+      repository: enterprise.registry.ai/sre/k8s-mcp
+      tag: "v1.0.0"
+      pullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+  github:
+    replicaCount: 1
+    port: 8082
+    image:
+      repository: enterprise.registry.ai/sre/github-mcp
+      tag: "v1.0.0"
+      pullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 85
+
+serviceAccount:
+  create: true
+  name: ai-sre-platform-sa

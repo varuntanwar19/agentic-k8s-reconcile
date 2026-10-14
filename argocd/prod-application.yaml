@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ai-sre-platform-prod
+  namespace: argocd
+  labels:
+    environment: production
+    tier: control-plane
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ai-sre-project
+  source:
+    repoURL: 'https://github.com/enterprise/ai-sre-platform.git'
+    targetRevision: main
+    path: charts/ai-sre-platform
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: ai-sre-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
